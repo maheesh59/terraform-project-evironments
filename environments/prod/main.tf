@@ -1,4 +1,6 @@
-# 1. Network Infrastructure
+# ==============================================================
+# 1. Network Infrastructure (VPC)
+# ==============================================================
 module "vpc" {
   source = "../../modules/foundation/vpc"
 
@@ -7,71 +9,115 @@ module "vpc" {
   vpc_cidr             = var.vpc_cidr
   public_subnet_cidrs  = var.public_subnet_cidrs
   private_subnet_cidrs = var.private_subnet_cidrs
-  enable_s3_endpoint   = true
+  public_subnet_azs    = var.public_subnet_azs
+  private_subnet_azs   = var.private_subnet_azs
+
+  subnet_tags = var.subnet_tags
 }
 
-# 2. Encryption KMS Key
-module "kms" {
-  source = "../../modules/foundation/kms"
+# ==============================================================================
+# 2. VPC Endpoints
+# ==============================================================================
 
-  alias_name  = "alias/app-${var.environment}"
-  description = "KMS Encryption key for ${var.environment} workload"
-  tags        = { Environment = var.environment }
+module "vpc_endpoints" {
+  source = "../../modules/foundation/vpc_endpoints"
+
+  environment = var.environment
+  aws_region  = var.aws_region
+
+  vpc_id   = module.vpc.vpc_id
+  vpc_cidr = var.vpc_cidr
+
+  private_subnet_ids      = module.vpc.private_subnet_ids
+  private_route_table_ids = module.vpc.private_route_table_ids
+
+  enable_s3_endpoint             = true
+  enable_dynamodb_endpoint       = true
+  enable_ecr_endpoints           = true
+  enable_secretsmanager_endpoint = true
+  enable_ssm_endpoint            = true
+
+  name_prefix = "${var.project_name}-${var.environment}"
+
+  common_tags = {
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+    Project     = var.project_name
+  }
 }
 
-# 3. S3 Storage Bucket (Prod policies: Lifecycle enabled, deletion protection)
-module "s3_assets" {
-  source = "../../modules/foundation/s3"
 
-  bucket_name       = "app-assets-${var.environment}-ap-south-1-010160406667"
-  enable_versioning = true
-  kms_key_arn       = module.kms.key_arn
-  force_destroy     = false # Protected against deletion
+# ==============================================================
+# 3. ECR Repositories Configuration
+# ==============================================================
+module "ecr" {
+  source = "../../modules/runtime/ecr"
 
-  enable_lifecycle_rules                        = true
-  lifecycle_transition_ia_days                  = 30
-  lifecycle_noncurrent_version_expiration_days = 90
+  environment = var.environment
 
-  tags = { Environment = var.environment }
-}
-
-# 4. Database Secrets
-module "secrets" {
-  source = "../../modules/foundation/secrets_manager"
-
-  name        = "${var.environment}/app/db-credentials"
-  description = "Database credentials for ${var.environment}"
-  kms_key_id  = module.kms.key_arn
-
-  secret_key_values = {
-    username = "prod_admin"
-    password = var.db_password
+  repositories = {
+    my_prod_ecr = {
+      repository_name            = "my-prod-ecr"
+      image_tag_mutability       = "IMMUTABLE"
+      scan_on_push               = true
+      untagged_image_expiry_days = 7
+      tagged_image_max_count     = 30
+      tagged_prefixes            = ["v", "release"]
+    }
   }
 
-  tags = { Environment = var.environment }
+  extra_tags = {
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+    Project     = var.project_name
+  }
 }
 
-# 5. Application Execution IAM Role
-module "iam_role" {
-  source = "../../modules/foundation/iam"
+# ==============================================================
+# 4. Amazon EKS Cluster
+# ==============================================================
+module "eks" {
+  source = "../../modules/runtime/eks"
 
-  role_name        = "app-execution-role-${var.environment}"
-  trusted_services = ["ec2.amazonaws.com"]
+  environment     = var.environment
+  cluster_name    = "${var.project_name}-${var.environment}-cluster"
+  cluster_version = var.kubernetes_version
+  vpc_id          = module.vpc.vpc_id
 
-  managed_policy_arns = [
-    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-  ]
+  # Passes subnet parameters for modules expecting either naming convention
+  subnet_ids         = module.vpc.private_subnet_ids
+  private_subnet_ids = module.vpc.private_subnet_ids
 
-  inline_policies = {
-    "s3-access" = jsonencode({
-      Version = "2012-10-17"
-      Statement = [{
-        Effect   = "Allow"
-        Action   = ["s3:GetObject", "s3:PutObject"]
-        Resource = ["${module.s3_assets.bucket_arn}/*"]
-      }]
-    })
+  node_groups = var.node_groups
+
+  extra_tags = {
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+    Project     = var.project_name
   }
+}
 
-  tags = { Environment = var.environment }
+# ==============================================================
+# 4. Karpenter Autoscaler
+# ==============================================================
+module "karpenter" {
+  source = "../../modules/runtime/eks/karpenter"
+
+  environment = var.environment
+  aws_region  = var.aws_region
+
+  cluster_name     = module.eks.cluster_name
+  cluster_endpoint = module.eks.cluster_endpoint
+
+  cluster_primary_security_group_id = module.eks.cluster_primary_security_group_id
+  oidc_provider_arn                 = module.eks.oidc_provider_arn
+
+
+  enable_spot_termination_handling = true
+
+  extra_tags = {
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+    Project     = var.project_name
+  }
 }

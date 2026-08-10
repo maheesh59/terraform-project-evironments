@@ -1,24 +1,40 @@
+# ==============================================================
+# VPC Outputs
+# ==============================================================
 output "vpc_id" {
-  description = "VPC ID"
+  description = "The ID of the VPC"
   value       = module.vpc.vpc_id
 }
 
-output "kms_key_arn" {
-  description = "ARN of KMS Key"
-  value       = module.kms.key_arn
+output "private_subnet_ids" {
+  description = "List of private subnet IDs"
+  value       = module.vpc.private_subnet_ids
 }
 
-output "s3_bucket_name" {
-  description = "S3 Bucket Name"
-  value       = module.s3_assets.bucket_id
+# ==============================================================
+# ECR Outputs
+# ==============================================================
+output "ecr_repository_urls" {
+  description = "Map of created ECR repository URLs for image push/pull operations"
+  value       = module.ecr.repository_urls
 }
 
-output "secret_arn" {
-  description = "Secrets Manager ARN"
-  value       = module.secrets.secret_arn
+output "ecr_repository_arns" {
+  description = "Map of created ECR repository ARNs for IAM policy bindings"
+  value       = module.ecr.repository_arns
 }
 
-output "iam_role_arn" {
-  description = "IAM Role ARN"
-  value       = module.iam_role.role_arn
+# ==============================================================
+# EKS Outputs
+# ==============================================================
+output "eks_cluster_name" {
+  description = "EKS Cluster Name"
+  value       = module.eks.cluster_name
 }
+
+output "eks_cluster_endpoint" {
+  description = "EKS Control Plane Endpoint"
+  value       = module.eks.cluster_endpoint
+}
+
+

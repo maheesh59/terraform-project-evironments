@@ -36,8 +36,8 @@ variable "aws_region" {
   default     = "ap-south-1"
 }
 
-variable "enable_s3_endpoint" {
-  type        = bool
-  description = "Enable S3 Gateway Endpoint"
-  default     = true
+variable "subnet_tags" {
+  type        = map(string)
+  description = "Additional tags to apply to all subnets"
+  default     = {}
 }

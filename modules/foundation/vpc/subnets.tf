@@ -10,7 +10,8 @@ resource "aws_subnet" "public" {
     local.common_tags,
     {
       Name = "${local.name_prefix}-public-subnet-${each.value.idx}"
-    }
+    },
+    var.subnet_tags
   )
 }
 
@@ -25,6 +26,7 @@ resource "aws_subnet" "private" {
     local.common_tags,
     {
       Name = "${local.name_prefix}-private-subnet-${each.value.idx}"
-    }
+    },
+    var.subnet_tags
   )
 }

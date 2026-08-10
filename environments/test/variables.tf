@@ -18,12 +18,6 @@ variable "project_name" {
   default     = "foundation"
 }
 
-variable "owner" {
-  type        = string
-  description = "Owner or team managing the infrastructure"
-  default     = "devops"
-}
-
 # ==============================================================
 # Network (VPC) Variables
 # ==============================================================
@@ -54,11 +48,52 @@ variable "private_subnet_azs" {
 }
 
 # ==============================================================
-# Secrets Variables
+# Container Registry (ECR) Variables
 # ==============================================================
 
-variable "db_password" {
+variable "ecr_frontend_mutability" {
   type        = string
-  description = "Database password stored in Secrets Manager"
-  sensitive   = true
+  description = "Image tag mutability setting for frontend repository (MUTABLE or IMMUTABLE)"
+  default     = "MUTABLE"
+}
+
+variable "ecr_backend_mutability" {
+  type        = string
+  description = "Image tag mutability setting for backend repository (MUTABLE or IMMUTABLE)"
+  default     = "MUTABLE"
+}
+
+variable "ecr_untagged_expiry_days" {
+  type        = number
+  description = "Number of days before untagged images are automatically deleted"
+  default     = 7
+}
+
+variable "ecr_tagged_max_count" {
+  type        = number
+  description = "Maximum number of tagged images to retain per repository"
+  default     = 30
+}
+
+variable "ecr_tagged_prefixes" {
+  type        = list(string)
+  description = "List of tag prefixes to evaluate for lifecycle retention policy"
+  default     = ["latest", "v", "test", "dev"]
+}
+
+# ==============================================================
+# KMS & Security Variables
+# ==============================================================
+
+variable "kms_key_arn" {
+  type        = string
+  description = "KMS Key ARN for EKS secret encryption"
+  default     = null # Or provide your default key ARN if required
+}
+
+# ==============================================================
+# addons
+# ==============================================================
+variable "eks_addons" {
+  type = map(any)
 }

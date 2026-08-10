@@ -36,11 +36,4 @@ output "private_route_table_ids" {
   value       = [for rt in aws_route_table.private_rt : rt.id]
 }
 
-# ==============================================================================
-# Endpoint Outputs
-# ==============================================================================
 
-output "s3_vpc_endpoint_id" {
-  description = "The ID of the S3 VPC Endpoint"
-  value       = try(aws_vpc_endpoint.s3[0].id, null)
-}

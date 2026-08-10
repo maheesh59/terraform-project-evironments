@@ -1,3 +1,7 @@
+# ==============================================================
+# Global & Project Variables
+# ==============================================================
+
 variable "aws_region" {
   type        = string
   description = "AWS Deployment Region"
@@ -7,6 +11,16 @@ variable "environment" {
   type        = string
   description = "Environment identifier (prod)"
 }
+
+variable "project_name" {
+  type        = string
+  description = "Project name for tags"
+  default     = "foundation"
+}
+
+# ==============================================================
+# Network (VPC) Variables
+# ==============================================================
 
 variable "vpc_cidr" {
   type        = string
@@ -23,8 +37,34 @@ variable "private_subnet_cidrs" {
   description = "Private subnet CIDRs"
 }
 
-variable "db_password" {
+variable "public_subnet_azs" {
+  type        = list(string)
+  description = "AZs for public subnets"
+}
+
+variable "private_subnet_azs" {
+  type        = list(string)
+  description = "AZs for private subnets"
+}
+
+variable "subnet_tags" {
+  type        = map(string)
+  description = "Additional tags for prod subnets"
+  default     = {}
+}
+
+# ==============================================================
+# EKS & Karpenter Variables
+# ==============================================================
+
+variable "kubernetes_version" {
   type        = string
-  description = "Master password stored in Secrets Manager"
-  sensitive   = true
+  description = "Kubernetes Version for EKS"
+  default     = "1.30"
+}
+
+variable "node_groups" {
+  type        = any
+  description = "EKS managed node group configurations"
+  default     = {}
 }
