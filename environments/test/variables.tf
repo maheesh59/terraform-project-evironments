@@ -100,16 +100,6 @@ variable "node_groups" {
 }
 
 # ==============================================================
-# KMS & Security Variables
-# ==============================================================
-
-variable "kms_key_arn" {
-  type        = string
-  description = "KMS Key ARN for EKS secret encryption"
-  default     = null # Or provide your default key ARN if required
-}
-
-# ==============================================================
 # addons
 # ==============================================================
 variable "eks_addons" {

@@ -77,6 +77,11 @@ module "ecr" {
 
 data "aws_caller_identity" "current" {}
 
+# Fetch KMS key dynamically by alias (no hardcoded Account ID)
+data "aws_kms_key" "state_key" {
+  key_id = "alias/global-tfstate-kms"
+}
+
 module "eks" {
   source = "../../modules/runtime/eks"
 
@@ -89,7 +94,8 @@ module "eks" {
   subnet_ids         = module.vpc.private_subnet_ids
   private_subnet_ids = module.vpc.private_subnet_ids
 
-  kms_key_arn = var.kms_key_arn
+  # Dynamic KMS Key ARN from data source
+  kms_key_arn = data.aws_kms_key.state_key.arn
 
   node_groups = var.node_groups
 
