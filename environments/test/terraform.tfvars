@@ -16,7 +16,7 @@ public_subnet_azs   = ["ap-south-1a", "ap-south-1b"]
 
 # 2 private subnets
 private_subnet_cidrs = ["10.10.11.0/24", "10.10.12.0/24"]
-private_subnet_azs   = ["ap-south-1b", "ap-south-1a"]
+private_subnet_azs   = ["ap-south-1a", "ap-south-1b"]
 
 # ==============================================================
 # Container Registry (ECR) Overrides (Optional)
@@ -36,10 +36,10 @@ cluster_log_retention_days = 30
 
 node_groups = {
   test_nodes = {
-    instance_types = ["t3.medium"]
+    instance_types = ["c7i-flex.large"]
     capacity_type  = "ON_DEMAND"
-    desired_size   = 0
-    min_size       = 0
+    desired_size   = 2
+    min_size       = 2
     max_size       = 3
 
     labels = {

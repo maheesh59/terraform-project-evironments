@@ -12,7 +12,7 @@ data "aws_iam_policy_document" "eks_kms" {
     resources = ["*"]
   }
 
-  # 2. CloudWatch Logs
+  # 2. CloudWatch Logs (Unrestricted Service Access)
   statement {
     sid    = "AllowCloudWatchLogs"
     effect = "Allow"
@@ -28,12 +28,6 @@ data "aws_iam_policy_document" "eks_kms" {
       "kms:DescribeKey"
     ]
     resources = ["*"]
-
-    condition {
-      test     = "ArnLike"
-      variable = "kms:EncryptionContext:aws:logs:arn"
-      values   = ["arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:*"]
-    }
   }
 
   # 3. Allow EC2 and Auto Scaling service (Required for encrypted EBS Node volumes)
@@ -57,17 +51,20 @@ data "aws_iam_policy_document" "eks_kms" {
     condition {
       test     = "StringEquals"
       variable = "kms:ViaService"
-      values   = ["ec2.${data.aws_region.current.name}.amazonaws.com"]
+      values   = [
+        "ec2.${data.aws_region.current.name}.amazonaws.com",
+        "autoscaling.${data.aws_region.current.name}.amazonaws.com"
+      ]
     }
   }
 
-  # 4. Allow Auto Scaling Service-Linked Role specifically
+  # 4. Allow Auto Scaling Service-Linked Role dynamically via StringLike condition
   statement {
     sid    = "AllowAutoScalingServiceRole"
     effect = "Allow"
     principals {
       type        = "AWS"
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling"]
+      identifiers = ["*"]
     }
     actions = [
       "kms:Encrypt",
@@ -78,6 +75,12 @@ data "aws_iam_policy_document" "eks_kms" {
       "kms:DescribeKey"
     ]
     resources = ["*"]
+
+    condition {
+      test     = "StringLike"
+      variable = "aws:PrincipalArn"
+      values   = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/autoscaling.amazonaws.com/AWSServiceRoleForAutoScaling*"]
+    }
   }
 }
 
