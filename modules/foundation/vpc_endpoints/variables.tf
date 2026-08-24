@@ -68,3 +68,9 @@ variable "common_tags" {
   description = "Common tags for VPC endpoint resources"
   default     = {}
 }
+
+variable "security_group_name" {
+  type        = string
+  description = "Stable name for the VPC endpoint security group"
+  default     = null
+}

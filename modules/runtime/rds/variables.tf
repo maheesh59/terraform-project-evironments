@@ -1,96 +1,122 @@
-# ==============================================================
-# General & Naming
-# ==============================================================
-variable "environment" {
-  type        = string
-  description = "Target environment (e.g., prod, staging)"
-}
+############################################################
+# GENERAL
+############################################################
 
 variable "project_name" {
   type        = string
-  description = "Project name for tags and naming conventions"
+  description = "Project name"
 }
 
-variable "extra_tags" {
+variable "environment" {
+  type        = string
+  description = "Environment name"
+}
+
+variable "tags" {
   type        = map(string)
-  description = "Additional tags to apply to all resources"
+  description = "Additional resource tags"
   default     = {}
 }
 
-# ==============================================================
-# Networking
-# ==============================================================
+############################################################
+# NETWORK
+############################################################
+
 variable "vpc_id" {
   type        = string
-  description = "VPC ID where RDS and security groups will be deployed"
+  description = "VPC ID"
 }
 
 variable "subnet_ids" {
   type        = list(string)
-  description = "List of private subnet IDs for the RDS DB Subnet Group"
+  description = "Private subnet IDs for RDS"
+
+  validation {
+    condition     = length(var.subnet_ids) >= 2
+    error_message = "At least two subnet IDs must be provided."
+  }
 }
+
+############################################################
+# SECURITY GROUP
+############################################################
 
 variable "allowed_security_group_ids" {
   type        = list(string)
-  description = "List of Security Group IDs allowed to connect to RDS"
+  description = "Security groups allowed to access RDS"
   default     = []
 }
 
 variable "allowed_cidr_blocks" {
   type        = list(string)
-  description = "List of CIDR blocks allowed to connect to RDS"
+  description = "CIDR blocks allowed to access RDS"
   default     = []
 }
 
-# ==============================================================
-# Database Configuration
-# ==============================================================
+variable "security_group_description" {
+  type        = string
+  description = "RDS security group description"
+  default     = "Security group for RDS"
+}
+
+variable "security_group_ingress_description" {
+  type        = string
+  description = "Description for security group based ingress rules"
+  default     = "Allow database access from application security group"
+}
+
+variable "cidr_ingress_description" {
+  type        = string
+  description = "Description for CIDR based ingress rules"
+  default     = "Allow database access from authorized CIDR"
+}
+
+variable "ingress_protocol" {
+  type        = string
+  description = "Ingress protocol"
+  default     = "tcp"
+}
+
+variable "egress_cidr_block" {
+  type        = string
+  description = "CIDR allowed for outbound traffic"
+  default     = "0.0.0.0/0"
+}
+
+variable "egress_protocol" {
+  type        = string
+  description = "Egress protocol"
+  default     = "-1"
+}
+
+variable "egress_description" {
+  type        = string
+  description = "Egress rule description"
+  default     = "Allow outbound traffic"
+}
+
+############################################################
+# DATABASE ENGINE
+############################################################
+
 variable "engine" {
   type        = string
-  description = "Database engine (e.g., postgres, mysql)"
-  default     = "postgres"
+  description = "RDS database engine"
 }
 
 variable "engine_version" {
   type        = string
-  description = "Database engine version"
-  default     = "15.4"
+  description = "RDS engine version"
 }
 
 variable "family" {
   type        = string
-  description = "DB parameter group family (e.g., postgres15, mysql8.0)"
-  default     = "postgres15"
+  description = "RDS parameter group family"
 }
 
 variable "instance_class" {
   type        = string
-  description = "RDS instance class for production (e.g., db.m6i.large)"
-  default     = "db.m6i.large"
-}
-
-variable "allocated_storage" {
-  type        = number
-  description = "Initial allocated storage in GB"
-  default     = 50
-}
-
-variable "max_allocated_storage" {
-  type        = number
-  description = "Upper limit for storage autoscaling in GB (0 to disable)"
-  default     = 500
-}
-
-variable "storage_type" {
-  type        = string
-  description = "Storage type (gp3 recommended for production)"
-  default     = "gp3"
-}
-
-variable "port" {
-  type        = number
-  description = "Database connection port"
-  default     = 5432
+  description = "RDS instance class"
 }
 
 variable "db_name" {
@@ -100,33 +126,95 @@ variable "db_name" {
 
 variable "username" {
   type        = string
-  description = "Master username for the database"
-  default     = "dbadmin"
+  description = "Master username"
 }
+
+variable "port" {
+  type        = number
+  description = "Database port"
+}
+
+############################################################
+# STORAGE
+############################################################
+
+variable "allocated_storage" {
+  type        = number
+  description = "Initial storage size in GB"
+}
+
+variable "max_allocated_storage" {
+  type        = number
+  description = "Maximum storage size in GB"
+}
+
+variable "storage_type" {
+  type        = string
+  description = "RDS storage type"
+}
+
+variable "storage_encrypted" {
+  type        = bool
+  description = "Enable RDS storage encryption"
+  default     = true
+}
+
+############################################################
+# NETWORK BEHAVIOR
+############################################################
 
 variable "multi_az" {
   type        = bool
-  description = "Enable Multi-AZ deployment for high availability"
-  default     = true
+  description = "Enable Multi-AZ"
 }
 
 variable "publicly_accessible" {
   type        = bool
-  description = "Controls if instance is publicly accessible"
-  default     = false
+  description = "Make RDS publicly accessible"
 }
+
+############################################################
+# BACKUP
+############################################################
+
+variable "backup_retention_period" {
+  type        = number
+  description = "Backup retention period in days"
+}
+
+variable "preferred_backup_window" {
+  type        = string
+  description = "Preferred backup window"
+}
+
+variable "preferred_maintenance_window" {
+  type        = string
+  description = "Preferred maintenance window"
+}
+
+variable "copy_tags_to_snapshot" {
+  type        = bool
+  description = "Copy tags to snapshots"
+  default     = true
+}
+
+############################################################
+# DELETION
+############################################################
 
 variable "deletion_protection" {
   type        = bool
-  description = "Prevent accidental database deletion"
-  default     = true
+  description = "Enable deletion protection"
 }
 
 variable "skip_final_snapshot" {
   type        = bool
-  description = "Skip final snapshot before deletion"
-  default     = false
+  description = "Skip final snapshot when destroying RDS"
 }
+
+############################################################
+# PARAMETER GROUP
+############################################################
 
 variable "parameters" {
   type = list(object({
@@ -134,51 +222,105 @@ variable "parameters" {
     value        = string
     apply_method = optional(string, "immediate")
   }))
-  description = "Custom parameters to pass to DB parameter group"
-  default     = []
+
+  description = "Custom RDS parameters"
+
+  default = []
 }
 
-# ==============================================================
-# Encryption & Security
-# ==============================================================
+############################################################
+# KMS
+############################################################
+
 variable "kms_key_arn" {
   type        = string
-  description = "KMS Key ARN for storage encryption. If null, a new key is created."
+  description = "Existing KMS key ARN for RDS. Null creates a new key."
   default     = null
 }
 
-# ==============================================================
-# Backups & Maintenance
-# ==============================================================
-variable "backup_retention_period" {
+variable "secrets_manager_kms_key_arn" {
+  type        = string
+  description = "Existing KMS key ARN for Secrets Manager. Null uses RDS KMS key."
+  default     = null
+}
+
+variable "kms_deletion_window_in_days" {
   type        = number
-  description = "Days to retain automated backups"
-  default     = 30
 }
 
-variable "preferred_backup_window" {
+variable "kms_enable_key_rotation" {
+  type        = bool
+}
+
+############################################################
+# PASSWORD
+############################################################
+
+variable "password_length" {
+  type        = number
+  description = "Generated database password length"
+}
+
+variable "password_special" {
+  type        = bool
+  description = "Include special characters in generated password"
+}
+
+variable "password_override_special" {
   type        = string
-  description = "Daily time range during which automated backups are created (UTC)"
-  default     = "02:00-03:00"
+  description = "Allowed special characters for generated password"
 }
 
-variable "preferred_maintenance_window" {
-  type        = string
-  description = "Weekly time range during which system maintenance can occur (UTC)"
-  default     = "Sun:04:00-Sun:05:00"
+############################################################
+# SECRETS MANAGER
+############################################################
+
+variable "secret_recovery_window_in_days" {
+  type        = number
 }
 
-# ==============================================================
-# Monitoring & Logging
-# ==============================================================
+############################################################
+# MONITORING
+############################################################
+
 variable "monitoring_interval" {
   type        = number
-  description = "Enhanced Monitoring interval in seconds (0, 1, 5, 10, 15, 30, 60)"
-  default     = 60
+  description = "Enhanced Monitoring interval in seconds"
+}
+
+variable "enhanced_monitoring_policy_name" {
+  type        = string
+  description = "AWS managed policy name for RDS Enhanced Monitoring"
+  default     = "AmazonRDSEnhancedMonitoringRole"
+}
+
+variable "rds_monitoring_service_principal" {
+  type        = string
+  description = "AWS service principal used by RDS Enhanced Monitoring"
+  default     = "monitoring.rds.amazonaws.com"
 }
 
 variable "enabled_cloudwatch_logs_exports" {
   type        = list(string)
-  description = "List of log types to export to CloudWatch"
-  default     = ["postgresql", "upgrade"]
+  description = "RDS log types exported to CloudWatch"
+}
+
+############################################################
+# MAINTENANCE
+############################################################
+
+variable "auto_minor_version_upgrade" {
+  type        = bool
+  description = "Enable automatic minor engine version upgrades"
+  default     = true
+}
+
+############################################################
+# SUBNET GROUP
+############################################################
+
+variable "subnet_group_description" {
+  type        = string
+  description = "RDS subnet group description"
+  default     = "RDS database subnet group"
 }

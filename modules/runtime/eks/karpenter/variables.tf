@@ -32,7 +32,6 @@ variable "oidc_provider_arn" {
 variable "karpenter_version" {
   type        = string
   description = "Karpenter Helm chart version"
-  default     = "1.0.0"
 }
 
 variable "enable_spot_termination_handling" {
@@ -50,7 +49,6 @@ variable "extra_tags" {
 variable "sqs_message_retention_seconds" {
   type        = number
   description = "The duration (in seconds) for which SQS retains spot termination messages."
-  default     = 300
 }
 
 

@@ -3,7 +3,11 @@
 # ==============================================================================
 
 resource "aws_security_group" "vpc_endpoints" {
-  name        = "${var.name_prefix}-vpc-endpoints-sg"
+  name = coalesce(
+    var.security_group_name,
+    "${var.name_prefix}-vpc-endpoints-sg"
+  )
+
   description = "Security group for VPC Interface Endpoints"
   vpc_id      = var.vpc_id
 
@@ -26,7 +30,10 @@ resource "aws_security_group" "vpc_endpoints" {
   tags = merge(
     local.endpoint_tags,
     {
-      Name = "${var.name_prefix}-vpc-endpoints-sg"
+      Name = coalesce(
+        var.security_group_name,
+        "${var.name_prefix}-vpc-endpoints-sg"
+      )
     }
   )
 }

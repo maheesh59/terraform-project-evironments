@@ -27,6 +27,21 @@ resource "helm_release" "karpenter" {
     value = var.enable_spot_termination_handling ? aws_sqs_queue.interruption[0].name : ""
   }
 
+  set {
+    name  = "postInstallHook.image.repository"
+    value = "registry.k8s.io/kubectl"
+  }
+
+  set {
+    name  = "postInstallHook.image.tag"
+    value = "1.30.14"
+  }
+
+  set {
+    name  = "postInstallHook.image.digest"
+    value = ""
+  }
+
   depends_on = [
     aws_iam_role_policy.controller
   ]

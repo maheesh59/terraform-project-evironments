@@ -59,12 +59,134 @@ variable "subnet_tags" {
 
 variable "kubernetes_version" {
   type        = string
-  description = "Kubernetes Version for EKS"
-  default     = "1.30"
+  description = "Kubernetes version for the EKS cluster"
+}
+
+variable "cluster_log_retention_days" {
+  type        = number
+  description = "Number of days to retain EKS CloudWatch logs"
 }
 
 variable "node_groups" {
   type        = any
   description = "EKS managed node group configurations"
+  default     = {}
+}
+
+# ==============================================================
+# Karpenter Variables
+# ==============================================================
+
+variable "karpenter_version" {
+  type        = string
+  description = "Karpenter Helm chart version"
+}
+
+variable "sqs_message_retention_seconds" {
+  type        = number
+  description = "SQS retention period for Karpenter Spot interruption messages"
+}
+
+# ============================================================
+# RDS
+# ============================================================
+
+variable "rds" {
+  description = "RDS configuration"
+
+  type = object({
+    # DATABASE
+
+    engine         = string
+    engine_version = string
+
+    instance_class = string
+
+    db_name  = string
+    username = string
+    port     = number
+
+    # STORAGE
+
+    allocated_storage     = number
+    max_allocated_storage = number
+    storage_type          = string
+    storage_encrypted     = bool
+
+    # NETWORK
+
+    multi_az            = bool
+    publicly_accessible = bool
+
+    # SECURITY GROUP
+
+    allowed_cidr_blocks = list(string)
+
+    security_group_description         = string
+    security_group_ingress_description = string
+    cidr_ingress_description           = string
+
+    ingress_protocol = string
+
+    egress_cidr        = string
+    egress_protocol    = string
+    egress_description = string
+
+    # PASSWORD
+
+    password_length             = number
+    password_special            = bool
+    password_special_characters = string
+
+    # BACKUP
+
+    backup_retention_period = number
+
+    backup_window      = string
+    maintenance_window = string
+
+    copy_tags_to_snapshot = bool
+
+    # DELETION
+
+    deletion_protection = bool
+    skip_final_snapshot = bool
+
+    # MONITORING
+
+    monitoring_interval = number
+
+    enabled_cloudwatch_logs_exports = list(string)
+
+    # PARAMETER GROUP
+
+    parameter_group_family = string
+
+    parameters = list(object({
+      name         = string
+      value        = string
+      apply_method = optional(string, "immediate")
+    }))
+
+    # KMS
+
+    kms_key_arn                 = optional(string, null)
+    secrets_manager_kms_key_arn = optional(string, null)
+    kms_deletion_window_in_days = number
+    kms_enable_key_rotation     = bool
+
+    # SECRETS MANAGER
+
+    secret_recovery_window_in_days = number
+  })
+}
+
+# ============================================================
+# Common Tags
+# ============================================================
+
+variable "tags" {
+  description = "Common tags for resources"
+  type        = map(string)
   default     = {}
 }

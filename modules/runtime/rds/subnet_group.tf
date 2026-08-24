@@ -1,11 +1,15 @@
 resource "aws_db_subnet_group" "this" {
-  name_prefix = "${local.name_prefix}-rds-sn-group-"
-  description = "Subnet group for ${local.name_prefix} RDS instance"
-  subnet_ids  = var.subnet_ids
+  name_prefix = "${local.name_prefix}-rds-subnet-"
+
+  description = var.subnet_group_description
+
+  subnet_ids = var.subnet_ids
 
   tags = merge(
-    local.default_tags,
-    { Name = "${local.name_prefix}-rds-subnet-group" }
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-rds-subnet"
+    }
   )
 
   lifecycle {

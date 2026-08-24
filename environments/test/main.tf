@@ -74,12 +74,16 @@ module "ecr" {
 # ==============================================================
 # 4. EKS Cluster Configuration
 # ==============================================================
+
+data "aws_caller_identity" "current" {}
+
 module "eks" {
   source = "../../modules/runtime/eks"
 
-  environment     = var.environment
-  cluster_name    = "${var.environment}-eks-cluster-new"
-  cluster_version = "1.30"
+  environment                = var.environment
+  cluster_name               = "${var.environment}-eks-cluster-new"
+  cluster_version            = var.kubernetes_version
+  cluster_log_retention_days = var.cluster_log_retention_days
 
   vpc_id             = module.vpc.vpc_id
   subnet_ids         = module.vpc.private_subnet_ids
@@ -87,21 +91,25 @@ module "eks" {
 
   kms_key_arn = var.kms_key_arn
 
-  node_groups = {
-    test_nodes = {
-      instance_types = ["t3.medium"]
-      capacity_type  = "ON_DEMAND"
-      desired_size   = 2
-      min_size       = 1
-      max_size       = 3
+  node_groups = var.node_groups
 
-      labels = {
-        environment = "test"
-      }
+  eks_addons = {
+    aws-ebs-csi-driver = {
+      version = var.eks_addons["aws-ebs-csi-driver"].version
+
+      service_account_role_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.eks_addons["aws-ebs-csi-driver"].service_account_role_name}"
     }
-  }
 
-  eks_addons = var.eks_addons
+    vpc-cni = {
+      version = var.eks_addons["vpc-cni"].version
+    }
+
+    coredns = {
+      version = var.eks_addons["coredns"].version
+    }
+
+    kube-proxy = {}
+  }
 
   extra_tags = {
     Environment = var.environment

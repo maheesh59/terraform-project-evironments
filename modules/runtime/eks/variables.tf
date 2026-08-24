@@ -11,8 +11,8 @@ variable "cluster_name" {
 variable "cluster_version" {
   type        = string
   description = "Kubernetes version for the EKS cluster"
-  default     = "1.30"
 }
+
 
 variable "vpc_id" {
   type        = string
@@ -27,7 +27,6 @@ variable "private_subnet_ids" {
 variable "cluster_log_retention_days" {
   type        = number
   description = "Number of days to retain CloudWatch logs for the cluster"
-  default     = 90
 }
 
 variable "extra_tags" {

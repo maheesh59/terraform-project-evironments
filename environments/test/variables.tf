@@ -66,19 +66,37 @@ variable "ecr_backend_mutability" {
 variable "ecr_untagged_expiry_days" {
   type        = number
   description = "Number of days before untagged images are automatically deleted"
-  default     = 7
 }
 
 variable "ecr_tagged_max_count" {
   type        = number
   description = "Maximum number of tagged images to retain per repository"
-  default     = 30
 }
 
 variable "ecr_tagged_prefixes" {
   type        = list(string)
   description = "List of tag prefixes to evaluate for lifecycle retention policy"
   default     = ["latest", "v", "test", "dev"]
+}
+
+# ==============================================================
+# EKS Variables
+# ==============================================================
+
+variable "kubernetes_version" {
+  type        = string
+  description = "Kubernetes version for the EKS cluster"
+}
+
+variable "cluster_log_retention_days" {
+  type        = number
+  description = "Number of days to retain EKS CloudWatch logs"
+}
+
+variable "node_groups" {
+  type        = any
+  description = "EKS managed node group configurations"
+  default     = {}
 }
 
 # ==============================================================
@@ -97,3 +115,5 @@ variable "kms_key_arn" {
 variable "eks_addons" {
   type = map(any)
 }
+
+
