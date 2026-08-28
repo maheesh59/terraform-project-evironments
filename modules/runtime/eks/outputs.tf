@@ -53,3 +53,8 @@ output "cluster_primary_security_group_id" {
   description = "Cluster security group created by the EKS control plane"
   value       = aws_eks_cluster.main.vpc_config[0].cluster_security_group_id
 }
+
+output "ebs_csi_role_arn" {
+  description = "IAM role ARN for the EBS CSI driver"
+  value       = aws_iam_role.ebs_csi.arn
+}

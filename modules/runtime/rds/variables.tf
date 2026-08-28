@@ -245,30 +245,21 @@ variable "secrets_manager_kms_key_arn" {
 }
 
 variable "kms_deletion_window_in_days" {
-  type        = number
+  type = number
 }
 
 variable "kms_enable_key_rotation" {
-  type        = bool
+  type = bool
 }
 
 ############################################################
 # PASSWORD
 ############################################################
 
-variable "password_length" {
-  type        = number
-  description = "Generated database password length"
-}
-
-variable "password_special" {
-  type        = bool
-  description = "Include special characters in generated password"
-}
-
-variable "password_override_special" {
+variable "password" {
   type        = string
-  description = "Allowed special characters for generated password"
+  description = "RDS database password"
+  sensitive   = true
 }
 
 ############################################################
@@ -276,7 +267,7 @@ variable "password_override_special" {
 ############################################################
 
 variable "secret_recovery_window_in_days" {
-  type        = number
+  type = number
 }
 
 ############################################################
@@ -324,3 +315,5 @@ variable "subnet_group_description" {
   description = "RDS subnet group description"
   default     = "RDS database subnet group"
 }
+
+

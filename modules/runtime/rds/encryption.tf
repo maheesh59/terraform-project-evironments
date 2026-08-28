@@ -20,12 +20,6 @@ resource "aws_kms_alias" "rds" {
   target_key_id = aws_kms_key.rds[0].key_id
 }
 
-resource "random_password" "master" {
-  length           = var.password_length
-  special          = var.password_special
-  override_special = var.password_override_special
-}
-
 resource "aws_secretsmanager_secret" "db_credentials" {
   name_prefix = "${local.name_prefix}-rds-credentials-"
 
@@ -53,6 +47,6 @@ resource "aws_secretsmanager_secret_version" "db_credentials" {
     port     = var.port
     dbname   = var.db_name
     username = var.username
-    password = random_password.master.result
+    password = var.password
   })
 }

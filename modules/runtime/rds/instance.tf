@@ -19,7 +19,7 @@ resource "aws_db_instance" "this" {
 
   db_name  = var.db_name
   username = var.username
-  password = random_password.master.result
+  password = var.password
   port     = var.port
 
   db_subnet_group_name = aws_db_subnet_group.this.name

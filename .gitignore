@@ -7,8 +7,12 @@
 crash.log
 crash.*.log
 
+# Terraform plan files
+*.tfplan
+*.plan
+plan.txt
+
 # Secret / environment variable files
-*.tfvars
 *.tfvars.json
 override.tf
 override.tf.json
