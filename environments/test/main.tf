@@ -1,6 +1,7 @@
 # ==============================================================
-# 1. Network Infrastructure (VPC)
+# VPC
 # ==============================================================
+
 module "vpc" {
   source = "../../modules/foundation/vpc"
 
@@ -14,9 +15,9 @@ module "vpc" {
 }
 
 
-# ==============================================================================
-# 2. VPC Endpoints
-# ==============================================================================
+# ==============================================================
+# VPC ENDPOINTS
+# ==============================================================
 
 module "vpc_endpoints" {
   source = "../../modules/foundation/vpc_endpoints"
@@ -30,117 +31,77 @@ module "vpc_endpoints" {
   private_subnet_ids      = module.vpc.private_subnet_ids
   private_route_table_ids = module.vpc.private_route_table_ids
 
-  enable_s3_endpoint             = true
-  enable_dynamodb_endpoint       = true
-  enable_ecr_endpoints           = true
-  enable_secretsmanager_endpoint = true
-  enable_ssm_endpoint            = true
+  enable_s3_endpoint             = var.vpc_endpoints.enable_s3
+  enable_dynamodb_endpoint       = var.vpc_endpoints.enable_dynamodb
+  enable_ecr_endpoints           = var.vpc_endpoints.enable_ecr
+  enable_secretsmanager_endpoint = var.vpc_endpoints.enable_secretsmanager
+  enable_ssm_endpoint            = var.vpc_endpoints.enable_ssm
+  enable_ssmmessages_endpoint    = var.vpc_endpoints.enable_ssmmessages
+  enable_ec2messages_endpoint    = var.vpc_endpoints.enable_ec2messages
 
-  name_prefix = "${var.environment}-vpc"
+  name_prefix = var.vpc_endpoints.name_prefix
 
-  common_tags = {
-    Environment = var.environment
-    ManagedBy   = "Terraform"
-    Project     = var.project_name
-  }
+  common_tags = var.tags
 }
 
+
 # ==============================================================
-# 3. Container Registry (Test ECR Repository)
+# ECR
 # ==============================================================
+
 module "ecr" {
   source = "../../modules/runtime/ecr"
 
   environment = var.environment
 
-  repositories = {
-    my_test_ecr = {
-      repository_name            = "my-test-ecr"
-      image_tag_mutability       = var.ecr_frontend_mutability
-      scan_on_push               = true
-      untagged_image_expiry_days = var.ecr_untagged_expiry_days
-      tagged_image_max_count     = var.ecr_tagged_max_count
-      tagged_prefixes            = var.ecr_tagged_prefixes
-    }
-  }
+  repositories = var.ecr.repositories
 
-  extra_tags = {
-    Environment = var.environment
-    ManagedBy   = "Terraform"
-    Project     = var.project_name
-  }
+  extra_tags = var.tags
 }
 
-# ==============================================================
-# 4. EKS Cluster Configuration
-# ==============================================================
 
-data "aws_caller_identity" "current" {}
+# ==============================================================
+# EKS
+# ==============================================================
 
 module "eks" {
   source = "../../modules/runtime/eks"
 
   environment                = var.environment
-  cluster_name               = "${var.environment}-eks-cluster-new"
-  cluster_version            = var.kubernetes_version
-  cluster_log_retention_days = var.cluster_log_retention_days
+  cluster_name               = var.eks.cluster_name
+  cluster_version            = var.eks.cluster_version
+  cluster_log_retention_days = var.eks.cluster_log_retention_days
 
   vpc_id             = module.vpc.vpc_id
   subnet_ids         = module.vpc.private_subnet_ids
   private_subnet_ids = module.vpc.private_subnet_ids
 
+  node_groups = var.eks.node_groups
 
-  node_groups = var.node_groups
+  eks_addons = var.eks.eks_addons
 
-  eks_addons = {
-    aws-ebs-csi-driver = {
-      version = var.eks_addons["aws-ebs-csi-driver"].version
-
-      service_account_role_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.eks_addons["aws-ebs-csi-driver"].service_account_role_name}"
-    }
-
-    vpc-cni = {
-      version = var.eks_addons["vpc-cni"].version
-    }
-
-    coredns = {
-      version = var.eks_addons["coredns"].version
-    }
-
-    kube-proxy = {}
-  }
-
-  extra_tags = {
-    Environment = var.environment
-    ManagedBy   = "Terraform"
-    Project     = var.project_name
-  }
+  extra_tags = var.tags
 }
 
-############################################################
-# RDS MODULE
-############################################################
+
+# ==============================================================
+# RDS
+# ==============================================================
 
 module "rds" {
   source = "../../modules/runtime/rds"
 
-  ##########################################################
-  # PROJECT & TAGS
-  ##########################################################
-  project_name = var.project_name
-  environment  = var.environment
-  tags         = var.tags
+  project_name    = var.project_name
+  environment     = var.environment
+  tags            = var.tags
+  rds_name_prefix = "foundation-test"
 
-  ##########################################################
-  # NETWORK & SECURITY
-  ##########################################################
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnet_ids
 
-  allowed_security_group_ids = [
-  module.eks.node_security_group_id,
-  "sg-0991f5e5ec131b81a"
-]
+  allowed_security_group_ids = {
+    eks_nodes = module.eks.node_security_group_id
+  }
 
   allowed_cidr_blocks                = var.rds.allowed_cidr_blocks
   security_group_description         = var.rds.security_group_description
@@ -151,9 +112,6 @@ module "rds" {
   egress_protocol                    = var.rds.egress_protocol
   egress_description                 = var.rds.egress_description
 
-  ##########################################################
-  # DATABASE & AUTHENTICATION
-  ##########################################################
   engine         = var.rds.engine
   engine_version = var.rds.engine_version
   family         = var.rds.parameter_group_family
@@ -164,36 +122,26 @@ module "rds" {
   port     = var.rds.port
   password = var.rds.password
 
-  ##########################################################
-  # STORAGE
-  ##########################################################
   allocated_storage     = var.rds.allocated_storage
   max_allocated_storage = var.rds.max_allocated_storage
   storage_type          = var.rds.storage_type
   storage_encrypted     = var.rds.storage_encrypted
 
-  ##########################################################
-  # KMS & SECRETS MANAGER
-  ##########################################################
-  kms_key_arn                    = var.rds.kms_key_arn
-  secrets_manager_kms_key_arn    = var.rds.secrets_manager_kms_key_arn
+  kms_key_arn                 = var.rds.kms_key_arn
+  secrets_manager_kms_key_arn = var.rds.secrets_manager_kms_key_arn
+
   kms_deletion_window_in_days    = var.rds.kms_deletion_window_in_days
   kms_enable_key_rotation        = var.rds.kms_enable_key_rotation
   secret_recovery_window_in_days = var.rds.secret_recovery_window_in_days
 
-  ##########################################################
-  # NETWORK ACCESS & BACKUPS
-  ##########################################################
-  publicly_accessible          = var.rds.publicly_accessible
-  multi_az                     = var.rds.multi_az
+  publicly_accessible = var.rds.publicly_accessible
+  multi_az            = var.rds.multi_az
+
   backup_retention_period      = var.rds.backup_retention_period
   preferred_backup_window      = var.rds.backup_window
   preferred_maintenance_window = var.rds.maintenance_window
   copy_tags_to_snapshot        = var.rds.copy_tags_to_snapshot
 
-  ##########################################################
-  # DELETION & MONITORING
-  ##########################################################
   deletion_protection             = var.rds.deletion_protection
   skip_final_snapshot             = var.rds.skip_final_snapshot
   monitoring_interval             = var.rds.monitoring_interval
@@ -201,93 +149,124 @@ module "rds" {
   parameters                      = var.rds.parameters
 }
 
-# ==============================================================================
-# AWS Load Balancer Controller
-# Test Environment
-# Location: environments/test/main.tf
-# ==============================================================================
+
+# ==============================================================
+# AWS LOAD BALANCER CONTROLLER
+# ==============================================================
 
 module "load_balancer_controller" {
   source = "../../modules/runtime/load-balancer-controller"
 
-  # --------------------------------------------------------------------------
-  # AWS
-  # --------------------------------------------------------------------------
-
-  aws_region = var.aws_region
-
-  # --------------------------------------------------------------------------
-  # Project
-  # --------------------------------------------------------------------------
-
+  aws_region   = var.aws_region
   project_name = var.project_name
-
-  environment = var.environment
-
-  # --------------------------------------------------------------------------
-  # VPC
-  # --------------------------------------------------------------------------
+  environment  = var.environment
 
   vpc_id = module.vpc.vpc_id
 
-  # --------------------------------------------------------------------------
-  # EKS
-  # --------------------------------------------------------------------------
-
   cluster_name = module.eks.cluster_name
 
-  # --------------------------------------------------------------------------
-  # OIDC / IRSA
-  # --------------------------------------------------------------------------
-
   oidc_provider_arn = module.eks.oidc_provider_arn
-
   oidc_provider_url = module.eks.oidc_provider_url
 
-  # --------------------------------------------------------------------------
-  # Controller
-  # --------------------------------------------------------------------------
-
   enable_aws_load_balancer_controller = (
-    var.enable_aws_load_balancer_controller
+    var.load_balancer_controller.enabled
   )
 
   lb_controller_replica_count = (
-    var.lb_controller_replica_count
+    var.load_balancer_controller.replica_count
   )
 
   lb_controller_chart_version = (
-    var.lb_controller_chart_version
+    var.load_balancer_controller.chart_version
   )
 
-  # --------------------------------------------------------------------------
-  # WAF / Shield
-  # --------------------------------------------------------------------------
+  enable_waf    = var.load_balancer_controller.enable_waf
+  enable_wafv2  = var.load_balancer_controller.enable_wafv2
+  enable_shield = var.load_balancer_controller.enable_shield
 
-  enable_waf = var.enable_waf
+  lb_controller_namespace = (
+    var.load_balancer_controller.namespace
+  )
 
-  enable_wafv2 = var.enable_wafv2
+  lb_controller_service_account = (
+    var.load_balancer_controller.service_account
+  )
 
-  enable_shield = var.enable_shield
-
-  # --------------------------------------------------------------------------
-  # Kubernetes
-  # --------------------------------------------------------------------------
-
-  lb_controller_namespace = "kube-system"
-
-  lb_controller_service_account = "aws-load-balancer-controller"
-
-  # --------------------------------------------------------------------------
-  # Tags
-  # --------------------------------------------------------------------------
-
-  additional_tags = {
-    Environment = var.environment
-    Project     = var.project_name
-  }
+  additional_tags = var.tags
 }
 
 
+# ==============================================================
+# PLATFORM TOOLS
+# ==============================================================
 
+module "platform" {
+  source = "../../modules/platform/alb"
 
+  environment  = var.environment
+  project_name = var.project_name
+  aws_region   = var.aws_region
+
+  vpc_id             = module.vpc.vpc_id
+  public_subnet_ids  = module.vpc.public_subnet_ids
+  private_subnet_ids = module.vpc.private_subnet_ids
+
+  enable_jenkins   = var.platform.enable_jenkins
+  enable_nexus     = var.platform.enable_nexus
+  enable_sonarqube = var.platform.enable_sonarqube
+
+  nexus_name             = var.platform.nexus.name
+  nexus_java_version     = var.platform.nexus.java_version
+  nexus_instance_type    = var.platform.nexus.instance_type
+  nexus_root_volume_size = var.platform.nexus.root_volume_size
+  nexus_ami_id           = var.platform.nexus.ami_id
+
+  alb_name                = var.platform.alb.name
+  alb_internal            = var.platform.alb.internal
+  alb_load_balancer_type  = var.platform.alb.load_balancer_type
+  alb_deletion_protection = var.platform.alb.deletion_protection
+
+  alb_security_group_name        = var.platform.alb.security_group_name
+  alb_security_group_description = var.platform.alb.security_group_description
+
+  alb_ingress_rules = var.platform.alb.ingress_rules
+
+  alb_egress_description = var.platform.alb.egress.description
+  alb_egress_from_port   = var.platform.alb.egress.from_port
+  alb_egress_to_port     = var.platform.alb.egress.to_port
+  alb_egress_protocol    = var.platform.alb.egress.protocol
+  alb_egress_cidr_blocks = var.platform.alb.egress.cidr_blocks
+
+  target_type          = var.platform.target_type
+  listener_action_type = var.platform.listener_action_type
+
+  jenkins_listener_port     = var.platform.jenkins.listener_port
+  jenkins_listener_protocol = var.platform.jenkins.listener_protocol
+
+  nexus_listener_port     = var.platform.nexus.listener_port
+  nexus_listener_protocol = var.platform.nexus.listener_protocol
+
+  sonarqube_listener_port     = var.platform.sonarqube.listener_port
+  sonarqube_listener_protocol = var.platform.sonarqube.listener_protocol
+
+  jenkins_port   = var.platform.jenkins.port
+  nexus_port     = var.platform.nexus.port
+  sonarqube_port = var.platform.sonarqube.port
+
+  jenkins_target_group_name   = var.platform.jenkins.target_group_name
+  nexus_target_group_name     = var.platform.nexus.target_group_name
+  sonarqube_target_group_name = var.platform.sonarqube.target_group_name
+
+  jenkins_target_group_protocol   = var.platform.jenkins.target_group_protocol
+  nexus_target_group_protocol     = var.platform.nexus.target_group_protocol
+  sonarqube_target_group_protocol = var.platform.sonarqube.target_group_protocol
+
+  jenkins_health_check   = var.platform.jenkins.health_check
+  nexus_health_check     = var.platform.nexus.health_check
+  sonarqube_health_check = var.platform.sonarqube.health_check
+
+  jenkins   = var.platform.jenkins
+  sonarqube = var.platform.sonarqube
+
+  common_tags = var.tags
+}

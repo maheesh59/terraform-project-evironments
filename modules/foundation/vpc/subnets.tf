@@ -9,7 +9,7 @@ resource "aws_subnet" "public" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${local.name_prefix}-public-subnet-${each.value.idx}"
+      Name                     = "${local.name_prefix}-public-subnet-${each.value.idx}"
       "kubernetes.io/role/elb" = "1"
     },
     var.subnet_tags
@@ -26,7 +26,7 @@ resource "aws_subnet" "private" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${local.name_prefix}-private-subnet-${each.value.idx}"
+      Name                              = "${local.name_prefix}-private-subnet-${each.value.idx}"
       "kubernetes.io/role/internal-elb" = "1"
     },
     var.subnet_tags

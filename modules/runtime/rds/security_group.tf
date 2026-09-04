@@ -18,7 +18,7 @@ resource "aws_security_group" "this" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "from_security_groups" {
-  for_each = toset(var.allowed_security_group_ids)
+  for_each = var.allowed_security_group_ids
 
   security_group_id = aws_security_group.this.id
 
@@ -33,7 +33,7 @@ resource "aws_vpc_security_group_ingress_rule" "from_security_groups" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "from_cidrs" {
-  for_each = toset(var.allowed_cidr_blocks)
+  for_each = toset(nonsensitive(var.allowed_cidr_blocks))
 
   security_group_id = aws_security_group.this.id
 

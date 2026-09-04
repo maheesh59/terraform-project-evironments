@@ -1,148 +1,72 @@
-# ==============================================================
-# Global & Project Variables
-# ==============================================================
-
-variable "aws_region" {
-  type        = string
-  description = "AWS Deployment Region"
-}
-
 variable "environment" {
-  type        = string
-  description = "Environment identifier (test)"
+  type = string
 }
 
 variable "project_name" {
-  type        = string
-  description = "Project name used for resource naming and tags"
-  default     = "foundation"
+  type = string
 }
 
-# ==============================================================
-# Network (VPC) Variables
-# ==============================================================
+variable "aws_region" {
+  type = string
+}
 
 variable "vpc_cidr" {
-  type        = string
-  description = "CIDR range for VPC"
+  type = string
 }
 
 variable "public_subnet_cidrs" {
-  type        = list(string)
-  description = "Public subnet CIDRs"
+  type = list(string)
 }
 
 variable "private_subnet_cidrs" {
-  type        = list(string)
-  description = "Private subnet CIDRs"
+  type = list(string)
 }
 
 variable "public_subnet_azs" {
-  type        = list(string)
-  description = "Availability Zones for Public Subnets"
+  type = list(string)
 }
 
 variable "private_subnet_azs" {
-  type        = list(string)
-  description = "Availability Zones for Private Subnets"
+  type = list(string)
 }
 
-# ==============================================================
-# Container Registry (ECR) Variables
-# ==============================================================
-
-variable "ecr_frontend_mutability" {
-  type        = string
-  description = "Image tag mutability setting for frontend repository (MUTABLE or IMMUTABLE)"
-  default     = "MUTABLE"
+variable "tags" {
+  type = map(string)
 }
 
-variable "ecr_backend_mutability" {
-  type        = string
-  description = "Image tag mutability setting for backend repository (MUTABLE or IMMUTABLE)"
-  default     = "MUTABLE"
+variable "vpc_endpoints" {
+  type = object({
+    enable_s3             = bool
+    enable_dynamodb       = bool
+    enable_ecr            = bool
+    enable_secretsmanager = bool
+    enable_ssm            = bool
+    enable_ssmmessages    = bool
+    enable_ec2messages    = bool
+    name_prefix           = string
+  })
 }
 
-variable "ecr_untagged_expiry_days" {
-  type        = number
-  description = "Number of days before untagged images are automatically deleted"
+variable "ecr" {
+  type = object({
+    repositories = any
+  })
 }
 
-variable "ecr_tagged_max_count" {
-  type        = number
-  description = "Maximum number of tagged images to retain per repository"
+variable "eks" {
+  type = object({
+    cluster_name               = string
+    cluster_version            = string
+    cluster_log_retention_days = number
+    node_groups                = any
+    eks_addons                 = any
+  })
 }
-
-variable "ecr_tagged_prefixes" {
-  type        = list(string)
-  description = "List of tag prefixes to evaluate for lifecycle retention policy"
-  default     = ["latest", "v", "test", "dev"]
-}
-
-# ==============================================================
-# EKS Variables
-# ==============================================================
-
-variable "kubernetes_version" {
-  type        = string
-  description = "Kubernetes version for the EKS cluster"
-}
-
-variable "cluster_log_retention_days" {
-  type        = number
-  description = "Number of days to retain EKS CloudWatch logs"
-}
-
-variable "node_groups" {
-  type        = any
-  description = "EKS managed node group configurations"
-  default     = {}
-}
-
-# ==============================================================
-# addons
-# ==============================================================
-variable "eks_addons" {
-  type = map(any)
-}
-
-
-# ============================================================
-# RDS
-# ============================================================
 
 variable "rds" {
-  description = "RDS configuration"
+  sensitive = true
 
   type = object({
-    # --------------------------------------------------------
-    # DATABASE
-    # --------------------------------------------------------
-    engine         = string
-    engine_version = string
-    instance_class = string
-    db_name        = string
-    username       = string
-    password       = string
-    port           = number
-
-    # --------------------------------------------------------
-    # STORAGE
-    # --------------------------------------------------------
-    allocated_storage     = number
-    max_allocated_storage = number
-    storage_type          = string
-    storage_encrypted     = bool
-
-    # --------------------------------------------------------
-    # NETWORK
-    # --------------------------------------------------------
-    multi_az            = bool
-    publicly_accessible = bool
-
-    # --------------------------------------------------------
-    # SECURITY GROUP
-    # --------------------------------------------------------
     allowed_cidr_blocks                = list(string)
     security_group_description         = string
     security_group_ingress_description = string
@@ -152,100 +76,199 @@ variable "rds" {
     egress_protocol                    = string
     egress_description                 = string
 
-    # --------------------------------------------------------
-    # BACKUP
-    # --------------------------------------------------------
+    engine                 = string
+    engine_version         = string
+    parameter_group_family = string
+    instance_class         = string
+
+    db_name  = string
+    username = string
+    port     = number
+    password = string
+
+    allocated_storage     = number
+    max_allocated_storage = number
+    storage_type          = string
+    storage_encrypted     = bool
+
+    kms_key_arn                 = string
+    secrets_manager_kms_key_arn = string
+
+    kms_deletion_window_in_days    = number
+    kms_enable_key_rotation        = bool
+    secret_recovery_window_in_days = number
+
+    publicly_accessible = bool
+    multi_az            = bool
+
     backup_retention_period = number
     backup_window           = string
     maintenance_window      = string
     copy_tags_to_snapshot   = bool
 
-    # --------------------------------------------------------
-    # DELETION
-    # --------------------------------------------------------
-    deletion_protection = bool
-    skip_final_snapshot = bool
-
-    # --------------------------------------------------------
-    # MONITORING
-    # --------------------------------------------------------
+    deletion_protection             = bool
+    skip_final_snapshot             = bool
     monitoring_interval             = number
     enabled_cloudwatch_logs_exports = list(string)
 
-    # --------------------------------------------------------
-    # PARAMETER GROUP
-    # --------------------------------------------------------
-    parameter_group_family = string
-
-    parameters = list(object({
-      name         = string
-      value        = string
-      apply_method = optional(string, "immediate")
-    }))
-
-    # --------------------------------------------------------
-    # KMS
-    # --------------------------------------------------------
-    kms_key_arn                 = optional(string, null)
-    secrets_manager_kms_key_arn = optional(string, null)
-    kms_deletion_window_in_days = number
-    kms_enable_key_rotation     = bool
-
-    # --------------------------------------------------------
-    # SECRETS MANAGER
-    # --------------------------------------------------------
-    secret_recovery_window_in_days = number
+    parameters = any
   })
 }
 
-# ============================================================
-# COMMON TAGS
-# ============================================================
-
-variable "tags" {
-  description = "Common tags for resources"
-
-  type = map(string)
-
-  default = {}
+variable "load_balancer_controller" {
+  type = object({
+    enabled         = bool
+    replica_count   = number
+    chart_version   = string
+    enable_waf      = bool
+    enable_wafv2    = bool
+    enable_shield   = bool
+    namespace       = string
+    service_account = string
+  })
 }
 
-# ==============================================================================
-# AWS Load Balancer Controller - Test Variables
-# ==============================================================================
+variable "platform" {
+  type = object({
+    enable_jenkins   = bool
+    enable_nexus     = bool
+    enable_sonarqube = bool
 
-variable "enable_aws_load_balancer_controller" {
-  description = "Enable AWS Load Balancer Controller"
-  type        = bool
-  default     = true
+    target_type          = string
+    listener_action_type = string
+
+    alb = object({
+      name                = string
+      internal            = bool
+      load_balancer_type  = string
+      deletion_protection = bool
+
+      security_group_name        = string
+      security_group_description = string
+
+      ingress_rules = map(object({
+        description = string
+        from_port   = number
+        to_port     = number
+        protocol    = string
+        cidr_blocks = list(string)
+      }))
+
+      egress = object({
+        description = string
+        from_port   = number
+        to_port     = number
+        protocol    = string
+        cidr_blocks = list(string)
+      })
+    })
+
+    jenkins = object({
+      name                        = string
+      ami_id                      = string
+      ami_most_recent             = bool
+      ami_owner                   = string
+      ami_name_pattern            = string
+      ami_architecture            = string
+      ami_root_device_type        = string
+      instance_type               = string
+      root_volume_size            = number
+      root_volume_type            = string
+      root_volume_encrypted       = bool
+      associate_public_ip_address = bool
+
+      port         = number
+      protocol     = string
+      java_version = number
+
+      listener_port     = number
+      listener_protocol = string
+
+      target_group_name     = string
+      target_group_protocol = string
+
+      security_group_description = string
+      ingress_description        = string
+
+      egress_description = string
+      egress_from_port   = number
+      egress_to_port     = number
+      egress_protocol    = string
+      egress_cidr_blocks = list(string)
+
+      ssm_policy_arn = string
+
+      health_check = object({
+        enabled             = bool
+        protocol            = string
+        path                = string
+        matcher             = string
+        interval            = number
+        timeout             = number
+        healthy_threshold   = number
+        unhealthy_threshold = number
+      })
+    })
+
+    nexus = object({
+      name             = string
+      ami_id           = optional(string, null)
+      instance_type    = string
+      root_volume_size = number
+      java_version     = string
+
+      listener_port     = number
+      listener_protocol = string
+
+      port = number
+
+      target_group_name     = string
+      target_group_protocol = string
+
+      health_check = object({
+        enabled             = bool
+        protocol            = string
+        path                = string
+        matcher             = string
+        interval            = number
+        timeout             = number
+        healthy_threshold   = number
+        unhealthy_threshold = number
+      })
+    })
+
+    sonarqube = object({
+      name             = string
+      instance_type    = string
+      root_volume_size = number
+      ami_id           = optional(string, null)
+
+      sonarqube_version = string
+      java_version      = number
+
+      database_name     = string
+      database_username = string
+      database_password = string
+      database_port     = number
+
+      listener_port         = number
+      listener_protocol     = string
+      port                  = number
+      target_group_name     = string
+      target_group_protocol = string
+
+      health_check = object({
+        enabled             = bool
+        protocol            = string
+        path                = string
+        matcher             = string
+        interval            = number
+        timeout             = number
+        healthy_threshold   = number
+        unhealthy_threshold = number
+      })
+    })
+  })
 }
 
-variable "lb_controller_replica_count" {
-  description = "Number of AWS Load Balancer Controller replicas"
-  type        = number
-  default     = 1
-}
 
-variable "lb_controller_chart_version" {
-  description = "AWS Load Balancer Controller Helm chart version"
-  type        = string
-  default     = "1.7.1"
-}
-
-variable "enable_waf" {
-  description = "Enable AWS WAF"
-  type        = bool
-  default     = false
-}
-
-variable "enable_wafv2" {
-  description = "Enable AWS WAFv2"
-  type        = bool
-  default     = false
-}
-
-variable "enable_shield" {
-  description = "Enable AWS Shield Advanced"
-  type        = bool
-  default     = false
-}

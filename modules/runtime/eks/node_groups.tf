@@ -14,7 +14,7 @@ resource "aws_eks_node_group" "this" {
   launch_template {
     id      = aws_launch_template.nodes.id
     version = aws_launch_template.nodes.latest_version
-  }  
+  }
 
   scaling_config {
     desired_size = lookup(each.value, "desired_size", 2)

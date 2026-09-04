@@ -42,9 +42,9 @@ variable "subnet_ids" {
 ############################################################
 
 variable "allowed_security_group_ids" {
-  type        = list(string)
+  type        = map(string)
   description = "Security groups allowed to access RDS"
-  default     = []
+  default     = {}
 }
 
 variable "allowed_cidr_blocks" {
@@ -316,4 +316,8 @@ variable "subnet_group_description" {
   default     = "RDS database subnet group"
 }
 
-
+variable "rds_name_prefix" {
+  description = "Name prefix used for existing RDS resources. Set this to preserve existing resource names."
+  type        = string
+  default     = null
+}

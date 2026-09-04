@@ -51,7 +51,7 @@ data "aws_iam_policy_document" "eks_kms" {
     condition {
       test     = "StringEquals"
       variable = "kms:ViaService"
-      values   = [
+      values = [
         "ec2.${data.aws_region.current.name}.amazonaws.com",
         "autoscaling.${data.aws_region.current.name}.amazonaws.com"
       ]

@@ -74,3 +74,15 @@ variable "security_group_name" {
   description = "Stable name for the VPC endpoint security group"
   default     = null
 }
+
+variable "enable_ssmmessages_endpoint" {
+  type        = bool
+  default     = true
+  description = "Enable SSM Messages VPC Endpoint"
+}
+
+variable "enable_ec2messages_endpoint" {
+  type        = bool
+  default     = true
+  description = "Enable EC2 Messages VPC Endpoint"
+}
